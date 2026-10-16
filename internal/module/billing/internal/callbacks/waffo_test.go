@@ -35,7 +35,7 @@ type waffoFixture struct {
 	registryAt func(baseURL string) *gateway.Registry
 }
 
-func newWaffoFixture(t *testing.T, sandbox bool) waffoFixture {
+func newWaffoFixture(t *testing.T) waffoFixture {
 	t.Helper()
 	merchant, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -50,7 +50,7 @@ func newWaffoFixture(t *testing.T, sandbox bool) waffoFixture {
 	publicPEM := string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicDER}))
 	config, _ := json.Marshal(map[string]any{
 		"merchant_id": waffoMerchantID, "product_id": waffoProductID, "currency": "USD",
-		"tax_category": "digital_goods", "sandbox": sandbox,
+		"tax_category": "digital_goods", "sandbox": true,
 		"private_key": string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: merchantDER})),
 	})
 	return waffoFixture{
@@ -123,7 +123,7 @@ func waffoPendingOrder() *order.Order {
 const waffoSucceededPayment = `[{"id":"PAY_1","orderId":"ORD_1","status":"succeeded","orderMerchantExternalId":"order-1"}]`
 
 func TestWaffoNotifySettlesOnlyAfterSignedWebhookAndQueriedPaymentMatch(t *testing.T) {
-	fixture := newWaffoFixture(t, true)
+	fixture := newWaffoFixture(t)
 	server := waffoGraphQLServer(t, waffoSucceededPayment)
 	defer server.Close()
 	queue := &fakeActivationQueue{}
@@ -147,8 +147,8 @@ func TestWaffoNotifySettlesOnlyAfterSignedWebhookAndQueriedPaymentMatch(t *testi
 }
 
 func TestWaffoNotifyRejectsForgedOrMisdirectedWebhooks(t *testing.T) {
-	fixture := newWaffoFixture(t, true)
-	stranger := newWaffoFixture(t, true)
+	fixture := newWaffoFixture(t)
+	stranger := newWaffoFixture(t)
 	good := fixture.notification(t, "test", "order.completed", waffoPaidData(nil))
 
 	tampered := good
@@ -180,7 +180,7 @@ func TestWaffoNotifyRejectsForgedOrMisdirectedWebhooks(t *testing.T) {
 }
 
 func TestWaffoNotifyRejectsAnAmountOrCurrencyOtherThanTheExpectation(t *testing.T) {
-	fixture := newWaffoFixture(t, true)
+	fixture := newWaffoFixture(t)
 	for name, tc := range map[string]struct {
 		overrides map[string]any
 		want      string
@@ -204,7 +204,7 @@ func TestWaffoNotifyRejectsAnAmountOrCurrencyOtherThanTheExpectation(t *testing.
 }
 
 func TestWaffoNotifyAcknowledgesOtherEventsWithoutTouchingOrders(t *testing.T) {
-	fixture := newWaffoFixture(t, true)
+	fixture := newWaffoFixture(t)
 	for _, eventType := range []string{"subscription.activated", "subscription.canceled", "refund.succeeded", "refund.failed", "order.unknown"} {
 		t.Run(eventType, func(t *testing.T) {
 			orders := &callbackOrders{order: waffoPendingOrder()}
@@ -223,7 +223,7 @@ func TestWaffoNotifyAcknowledgesOtherEventsWithoutTouchingOrders(t *testing.T) {
 }
 
 func TestWaffoNotifyRejectsWhenGatewayDisagrees(t *testing.T) {
-	fixture := newWaffoFixture(t, true)
+	fixture := newWaffoFixture(t)
 	for name, tc := range map[string]struct{ payments, want string }{
 		"no such payment": {`[]`, "not found"},
 		"another payment": {`[{"id":"PAY_9","orderId":"ORD_1","status":"succeeded","orderMerchantExternalId":"order-1"}]`, "not found"},
@@ -247,7 +247,7 @@ func TestWaffoNotifyRejectsWhenGatewayDisagrees(t *testing.T) {
 }
 
 func TestWaffoNotifyRequiresExactPaymentBindingAndASingleTrade(t *testing.T) {
-	fixture := newWaffoFixture(t, true)
+	fixture := newWaffoFixture(t)
 	n := fixture.notification(t, "test", "order.completed", waffoPaidData(nil))
 
 	other := waffoPendingOrder()

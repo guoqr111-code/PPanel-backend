@@ -25,8 +25,8 @@ const (
 	waffoTestProductID  = "PROD_4cWAslE1GKkGeaOMl9Vbmy"
 )
 
-// waffoTestKeys 生成商户私钥（写进支付方式配置）与 webhook 验签公钥（注入注册表）。
-func waffoTestKeys(t *testing.T) (merchantPEM, webhookPublicPEM string) {
+// waffoTestKeys 生成写进支付方式配置的商户私钥（PEM）。
+func waffoTestKeys(t *testing.T) string {
 	t.Helper()
 	merchant, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -36,17 +36,12 @@ func waffoTestKeys(t *testing.T) (merchantPEM, webhookPublicPEM string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pubDER, err := x509.MarshalPKIXPublicKey(&merchant.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})),
-		string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubDER}))
+	return string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))
 }
 
 func waffoTestPayment(t *testing.T, extra map[string]any) *payment.Payment {
 	t.Helper()
-	merchantPEM, _ := waffoTestKeys(t)
+	merchantPEM := waffoTestKeys(t)
 	config := map[string]any{
 		"merchant_id": waffoTestMerchantID, "private_key": merchantPEM,
 		"product_id": waffoTestProductID, "currency": "USD", "tax_category": "digital_goods", "sandbox": true,
@@ -76,7 +71,7 @@ func TestWaffoRegistryDescribesThePlatform(t *testing.T) {
 }
 
 func TestWaffoNormalizeConfigCanonicalizesAndValidates(t *testing.T) {
-	merchantPEM, _ := waffoTestKeys(t)
+	merchantPEM := waffoTestKeys(t)
 	valid := func(extra map[string]any) map[string]any {
 		config := map[string]any{
 			"merchant_id": " " + waffoTestMerchantID + " ", "private_key": merchantPEM,

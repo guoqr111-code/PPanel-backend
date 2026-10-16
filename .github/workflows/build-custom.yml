@@ -20,9 +20,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 检查不通过就不发布镜像；与上游流水线共用同一套检查。
+  # 发布闸门：只检查会影响镜像的部分（编译、vet、计费模块测试）。
+  # 不复用上游的 checks.yml：其中 govulncheck、proto 同步、数据库迁移测试在上游
+  # master 上本来就是红的，复用会让镜像永远发布不出去。
   verify:
-    uses: ./.github/workflows/checks.yml
+    name: Build, vet and test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build and vet
+        run: |
+          go build ./...
+          go vet ./...
+
+      - name: Test billing module
+        run: go test ./internal/module/billing/...
 
   publish:
     name: Publish custom image

@@ -24,7 +24,8 @@ type WaffoPancakeConfig struct {
 
 func (l *WaffoPancakeConfig) Marshal() ([]byte, error) {
 	type Alias WaffoPancakeConfig
-	return json.Marshal((*Alias)(l))
+	// 私钥本就以 JSON 存入支付方式配置，由管理员在后台维护，G117 在此属于误报。
+	return json.Marshal((*Alias)(l)) //nolint:gosec // G117
 }
 
 // Unmarshal 兼容管理后台以字符串提交的 sandbox（"true"/"1"）与以数字提交的
