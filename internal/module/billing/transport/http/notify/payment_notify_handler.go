@@ -63,7 +63,7 @@ func PaymentNotifyHandler(service billing.Service) app.HandlerFunc {
 				return
 			}
 			notification.Body = payload
-			notification.Signature = string(ctx.GetHeader("Stripe-Signature"))
+			notification.Signature = string(ctx.GetHeader(signatureHeader(platform)))
 		} else {
 			notification.Form = nativeFormValues(ctx)
 			if style.UniqueParams {
@@ -107,6 +107,15 @@ func failWithStatus(ctx *app.RequestContext, err error) {
 		status = consts.StatusBadRequest
 	}
 	ctx.JSON(status, httpx.BuildHTTPResult(nil, err).Body)
+}
+
+// signatureHeader names the request header that carries the body signature of
+// a gateway that signs it.
+func signatureHeader(platform string) string {
+	if platform == "WaffoPancake" {
+		return "X-Waffo-Signature"
+	}
+	return "Stripe-Signature"
 }
 
 func nativeFormValues(ctx *app.RequestContext) url.Values {

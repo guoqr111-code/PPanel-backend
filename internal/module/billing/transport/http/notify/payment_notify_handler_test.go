@@ -250,3 +250,52 @@ func assertPaymentNotifyError(t *testing.T, ctx *app.RequestContext, wantStatus 
 		t.Fatalf("expected message %q, got %q", wantMessage, response.Msg)
 	}
 }
+
+// capturingNotifyService records the callback the handler hands to billing.
+type capturingNotifyService struct {
+	billing.Service
+	style billing.PaymentCallbackStyle
+	got   *billing.PaymentNotification
+}
+
+func (s capturingNotifyService) PaymentCallbackStyle(string) (billing.PaymentCallbackStyle, bool) {
+	return s.style, true
+}
+
+func (s capturingNotifyService) PaymentNotify(_ context.Context, n billing.PaymentNotification) error {
+	*s.got = n
+	return nil
+}
+
+// Each gateway that signs its body names its own header; one gateway's
+// signature header must never stand in for another's.
+func TestPaymentNotifyHandlerReadsTheSignatureHeaderOfThePlatform(t *testing.T) {
+	signed := billing.PaymentCallbackStyle{Body: true, StatusFailure: true}
+	tests := []struct {
+		platform string
+		header   string
+		other    string
+	}{
+		{"Stripe", "Stripe-Signature", "X-Waffo-Signature"},
+		{"WaffoPancake", "X-Waffo-Signature", "Stripe-Signature"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.platform, func(t *testing.T) {
+			var got billing.PaymentNotification
+			engine := server.Default()
+			ctx := engine.NewContext()
+			ctx.Request.SetRequestURI("/payment/notify")
+			ctx.Request.Header.SetMethod(http.MethodPost)
+			ctx.Request.Header.Set(tt.header, "own-signature")
+			ctx.Request.Header.Set(tt.other, "foreign-signature")
+			ctx.Request.SetBodyString(`{"id":"evt_1"}`)
+
+			PaymentNotifyHandler(capturingNotifyService{style: signed, got: &got})(
+				context.WithValue(context.Background(), requestctx.CtxKeyPlatform, tt.platform), ctx)
+
+			if got.Signature != "own-signature" || string(got.Body) != `{"id":"evt_1"}` {
+				t.Fatalf("notification = %+v, want the %s signature and the raw body", got, tt.header)
+			}
+		})
+	}
+}

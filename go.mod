@@ -35,6 +35,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/stripe/stripe-go/v81 v81.4.0
 	github.com/twilio/twilio-go v1.31.2
+	github.com/waffo-com/waffo-pancake-sdk-go v0.17.0
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.46.0
