@@ -16,6 +16,8 @@ type Registry struct {
 	httpClient       *http.Client
 	stripeBackends   *stripeSDK.Backends
 	cryptomusBaseURL string
+	waffoBaseURL     string
+	waffoWebhookKey  string
 }
 
 // Option configures a Registry.
@@ -41,6 +43,14 @@ func WithCryptomusBaseURL(baseURL string) Option {
 	return func(r *Registry) { r.cryptomusBaseURL = baseURL }
 }
 
+// WithWaffoEndpoint points the Waffo Pancake clients at another API host and
+// webhook verification key. Production never sets it: the payment query and
+// the signature key are what confirm a payment, so they must not be
+// redirectable through the database configuration of a payment method.
+func WithWaffoEndpoint(baseURL, webhookPublicKey string) Option {
+	return func(r *Registry) { r.waffoBaseURL, r.waffoWebhookKey = baseURL, webhookPublicKey }
+}
+
 // NewRegistry builds a registry of the supported gateways.
 func NewRegistry(opts ...Option) *Registry {
 	r := &Registry{}
@@ -64,6 +74,8 @@ var platforms = map[payment.Platform]platformSpec{
 	payment.AlipayF2F: {open: openAlipay, normalize: normalizeAlipay, style: CallbackStyle{TextReply: true}},
 	payment.Stripe:    {open: openStripe, normalize: normalizeStripe, style: CallbackStyle{Body: true, StatusFailure: true}},
 	payment.Cryptomus: {open: openCryptomus, normalize: normalizeCryptomus, style: CallbackStyle{Body: true, TextReply: true, TextFailure: true}},
+
+	payment.WaffoPancake: {open: openWaffo, normalize: normalizeWaffo, style: CallbackStyle{Body: true, StatusFailure: true}},
 }
 
 // Handles reports whether orders of platform are paid through a gateway.

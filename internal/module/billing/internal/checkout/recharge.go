@@ -36,6 +36,14 @@ func (s *Service) Recharge(ctx context.Context, req *dto.RechargeOrderRequest) (
 	if gateway.IsBalance(method) {
 		return nil, xerr.Errorf(xerr.PaymentMethodNotFound, "balance cannot pay for a recharge")
 	}
+	// 部分渠道（如 Waffo Pancake）配置了高于全局下限的最低充值金额。
+	channelMinimum, err := gateway.MinRecharge(method)
+	if err != nil {
+		return nil, xerr.Wrapf(err, xerr.ERROR, "read the recharge minimum of payment %d", method.Id)
+	}
+	if req.Amount < channelMinimum {
+		return nil, xerr.Errorf(xerr.InvalidParams, "recharge amount must be at least %d for this payment method", channelMinimum)
+	}
 	quote := pricing.Compute(pricing.Input{UnitPrice: req.Amount, Quantity: 1, Fee: pricing.FeeTerms(method)})
 	if err := orderAmountWithinLimit(quote.Amount); err != nil {
 		return nil, err

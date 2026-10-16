@@ -15,16 +15,18 @@ const (
 	EPay
 	Balance
 	Cryptomus
+	WaffoPancake
 	UNSUPPORTED Platform = -1
 )
 
 var platformNames = map[string]Platform{
-	"Stripe":      Stripe,
-	"AlipayF2F":   AlipayF2F,
-	"EPay":        EPay,
-	"balance":     Balance,
-	"Cryptomus":   Cryptomus,
-	"unsupported": UNSUPPORTED,
+	"Stripe":       Stripe,
+	"AlipayF2F":    AlipayF2F,
+	"EPay":         EPay,
+	"balance":      Balance,
+	"Cryptomus":    Cryptomus,
+	"WaffoPancake": WaffoPancake,
+	"unsupported":  UNSUPPORTED,
 }
 
 func (p Platform) String() string {
@@ -48,7 +50,7 @@ func ParsePlatform(s string) Platform {
 // an internal checkout method rather than an administrator-configurable
 // gateway.
 func SupportedPlatformNames() []string {
-	return []string{Stripe.String(), AlipayF2F.String(), EPay.String(), Balance.String(), Cryptomus.String()}
+	return []string{Stripe.String(), AlipayF2F.String(), EPay.String(), Balance.String(), Cryptomus.String(), WaffoPancake.String()}
 }
 
 func GetSupportedPlatforms() []integration.Info {
@@ -90,6 +92,19 @@ func GetSupportedPlatforms() []integration.Info {
 			PlatformFieldDescription: map[string]string{
 				"merchant_id": "Merchant UUID",
 				"api_key":     "Payment API Key",
+			},
+		},
+		{
+			Platform:    WaffoPancake.String(),
+			PlatformURL: "https://waffo.ai",
+			PlatformFieldDescription: map[string]string{
+				"merchant_id":         "Merchant ID (MER_...)",
+				"private_key":         "API private key in PEM format (write line breaks as \\n)",
+				"product_id":          "Product ID (PROD_...) created in the Waffo dashboard",
+				"currency":            "Currency of the product, e.g. USD",
+				"tax_category":        "Tax category, default digital_goods",
+				"sandbox":             "Sandbox Mode",
+				"min_recharge_amount": "Minimum recharge amount in the system currency, e.g. 10 (empty: global minimum only)",
 			},
 		},
 	}
