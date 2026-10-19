@@ -1,6 +1,8 @@
 package checkout
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	dto "github.com/perfect-panel/server/internal/module/billing/contract"
@@ -15,7 +17,11 @@ func TestRechargeEnforcesTheWaffoChannelMinimum(t *testing.T) {
 	waffo := f.h.Payment("WaffoPancake", `{"currency":"USD","min_recharge_amount":"10.00"}`)
 
 	_, err := f.svc.Recharge(ctx, &dto.RechargeOrderRequest{Amount: 999, Payment: waffo.Id})
-	assertCode(t, err, xerr.InvalidParams)
+	assertCode(t, err, xerr.RechargeBelowMinimum)
+	var coded *xerr.CodeError
+	if !errors.As(err, &coded) || !strings.Contains(coded.GetErrMsg(), "10.00") {
+		t.Fatalf("the message must state the minimum 10.00, got %v", err)
+	}
 	if len(f.h.Orders(u.Id)) != 0 {
 		t.Fatal("a recharge below the channel minimum created an order")
 	}

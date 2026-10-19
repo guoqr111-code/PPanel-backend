@@ -42,7 +42,7 @@ func (s *Service) Recharge(ctx context.Context, req *dto.RechargeOrderRequest) (
 		return nil, xerr.Wrapf(err, xerr.ERROR, "read the recharge minimum of payment %d", method.Id)
 	}
 	if req.Amount < channelMinimum {
-		return nil, xerr.Errorf(xerr.InvalidParams, "recharge amount must be at least %d for this payment method", channelMinimum)
+		return nil, gateway.RechargeBelowMinimumError(channelMinimum)
 	}
 	quote := pricing.Compute(pricing.Input{UnitPrice: req.Amount, Quantity: 1, Fee: pricing.FeeTerms(method)})
 	if err := orderAmountWithinLimit(quote.Amount); err != nil {

@@ -1,8 +1,11 @@
 package gateway
 
 import (
+	"fmt"
+
 	paymentEntity "github.com/perfect-panel/server/internal/module/billing/entity/payment"
 	"github.com/perfect-panel/server/internal/module/billing/internal/payment"
+	"github.com/perfect-panel/server/pkg/xerr"
 )
 
 // MinRecharge 返回支付方式要求的最低充值金额（最小货币单位，系统货币）。
@@ -20,4 +23,14 @@ func MinRecharge(method *paymentEntity.Payment) (int64, error) {
 		return 0, nil
 	}
 	return parseWaffoMinRecharge(config.MinRechargeAmount)
+}
+
+// RechargeBelowMinimumError 是充值金额低于渠道下限时返回给用户的错误。
+// 用专用错误码而不是 InvalidParams：前端对 400 固定显示"请求参数不正确"，
+// 会丢掉这里的具体金额；专用码没有固定文案，前端会原样显示下面的说明。
+func RechargeBelowMinimumError(minimum int64) error {
+	amount := payment.FormatAmount(minimum)
+	return fmt.Errorf("recharge amount is below the channel minimum %s: %w", amount,
+		xerr.NewErrCodeMsg(xerr.RechargeBelowMinimum,
+			fmt.Sprintf("该支付方式最低充值金额为 %s / Minimum recharge for this payment method is %s", amount, amount)))
 }

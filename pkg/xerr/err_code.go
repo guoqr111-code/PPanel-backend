@@ -190,6 +190,9 @@ const (
 	InvalidCouponDiscount         uint32 = 120015
 	InvalidCouponType             uint32 = 120016
 	WithdrawalAlreadyReviewed     uint32 = 120017
+	// RechargeBelowMinimum: 充值金额低于所选支付渠道的最低充值金额；
+	// 客户端没有为它写固定文案，会直接显示服务端返回的说明。
+	RechargeBelowMinimum uint32 = 120018
 )
 
 // Subscription band (BandSubscription): plans, user subscriptions and quota.
