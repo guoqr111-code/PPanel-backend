@@ -119,6 +119,7 @@ func init() {
 		InvalidCouponDiscount:         "INVALID_COUPON_DISCOUNT",
 		InvalidCouponType:             "INVALID_COUPON_TYPE",
 		WithdrawalAlreadyReviewed:     "WITHDRAWAL_ALREADY_REVIEWED",
+		RechargeBelowMinimum:          "RECHARGE_BELOW_MINIMUM",
 
 		// Subscription band
 		SubscriptionStatusChanged:       "SUBSCRIPTION_STATUS_CHANGED",
