@@ -113,7 +113,7 @@ func TestCreateCheckoutSendsOrderAmountAndReturnsHostedURL(t *testing.T) {
 
 	session, err := keys.client(t, server.URL, true).CreateCheckout(context.Background(), Order{
 		OrderNo: "order-1", Amount: 1999, Currency: "USD",
-		ReturnURL: "https://site.example/done", ExpiresIn: 15 * time.Minute,
+		ExpiresIn: 15 * time.Minute,
 	})
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
@@ -131,8 +131,8 @@ func TestCreateCheckoutSendsOrderAmountAndReturnsHostedURL(t *testing.T) {
 	if got["expiresInSeconds"] != float64(900) {
 		t.Fatalf("expiresInSeconds = %v, want the 15 minute payment window", got["expiresInSeconds"])
 	}
-	if got["successUrl"] != "https://site.example/done" {
-		t.Fatalf("successUrl = %v", got["successUrl"])
+	if _, present := got["successUrl"]; present {
+		t.Fatalf("successUrl = %v, the product's return link must apply", got["successUrl"])
 	}
 }
 
