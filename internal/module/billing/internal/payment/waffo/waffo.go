@@ -89,8 +89,6 @@ type Order struct {
 	// Amount 是 Currency 的最小货币单位。
 	Amount   int64
 	Currency string
-	// ReturnURL 是支付成功后浏览器回跳的地址，可为空。
-	ReturnURL string
 	// ExpiresIn 是收银台会话的有效期，不应超过订单的支付窗口。
 	ExpiresIn time.Duration
 }
@@ -112,9 +110,9 @@ func (c *Client) CreateCheckout(ctx context.Context, o Order) (*Session, error) 
 		},
 		OrderMerchantExternalID: pancake.Ptr(o.OrderNo),
 	}
-	if o.ReturnURL != "" {
-		params.SuccessURL = pancake.Ptr(o.ReturnURL)
-	}
+	// 不传 SuccessURL：付款结束后跳到哪里，由 Waffo 产品里的"返回链接"决定。
+	// PPanel 自带的 /payment?order_no=... 页会在订单仍待支付时再次发起支付，
+	// 而 Waffo 的 webhook 有延迟，跳回去就会撞上"订单状态错误"。
 	if seconds := int(o.ExpiresIn.Seconds()); seconds > 0 {
 		params.ExpiresInSeconds = pancake.Ptr(seconds)
 	}

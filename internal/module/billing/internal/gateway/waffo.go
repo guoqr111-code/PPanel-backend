@@ -136,7 +136,6 @@ func (g *waffoGateway) StartPayment(ctx context.Context, c Checkout) (*dto.Check
 		OrderNo:   c.Order.OrderNo,
 		Amount:    c.Charge.Amount,
 		Currency:  g.currency,
-		ReturnURL: c.ReturnURL,
 		ExpiresIn: order.PaymentWindow,
 	})
 	if err != nil {

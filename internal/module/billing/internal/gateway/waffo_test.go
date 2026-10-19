@@ -185,7 +185,7 @@ func TestWaffoStartPaymentReturnsTheHostedCheckoutWithoutClaimingATrade(t *testi
 	resp, err := gw.StartPayment(context.Background(), Checkout{
 		Order:     &order.Order{OrderNo: "order-1"},
 		Charge:    Charge{Amount: 1999, Currency: "USD"},
-		ReturnURL: "https://site.example/done",
+		ReturnURL: "https://site.example/done", // 网关不会把它传给 Waffo
 		Claim: func(context.Context, string) (string, error) {
 			t.Error("Waffo learns its payment id only from the callback; nothing may be claimed at checkout")
 			return "", errors.New("unexpected claim")
